@@ -1,0 +1,72 @@
+git remote add origin https://github.com/jessica-ebi/nm1.git
+git branch -M main
+git push -u origin main
+#include <Servo.h>
+#include <Keypad.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+const byte ROWS = 4;
+const byte COLS = 3;
+char keys[ROWS][COLS] = {
+  {'1', '2', '3'},
+  {'4', '5', '6'},
+  {'7', '8', '9'},
+  {'*', '0', '#'}
+};
+
+byte rowPins[ROWS] = {9, 8, 7, 6};  
+byte colPins[COLS] = {5, 4, 3};     
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+Servo lockServo;
+LiquidCrystal_I2C lcd(0x27, 16, 2);  
+String password = "1234";
+String enteredCode = "";
+
+void setup() {
+  Serial.begin(9600);
+  lcd.init();
+  lcd.backlight();
+  
+  lockServo.attach(10);
+  lockServo.write(0);
+  
+  lcd.setCursor(0, 0);
+  lcd.print("Enter Password:");
+}
+
+void loop() {
+  char key = keypad.getKey();
+
+  if (key) {
+    Serial.print(key);
+    enteredCode += key;
+    lcd.setCursor(0, 1);
+    lcd.print("Code: " + enteredCode);
+    
+    if (key == '#') {  
+      enteredCode.remove(enteredCode.length() - 1);  
+
+      lcd.clear();
+      if (enteredCode == password) {
+        lcd.setCursor(0, 0);
+        lcd.print("Access Granted!");
+        lockServo.write(90);
+        delay(5000);
+        lockServo.write(0);
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Enter Password:");
+      } else {
+        lcd.setCursor(0, 0);
+        lcd.print("Access Denied!");
+        delay(2000);
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Enter Password:");
+      }
+      enteredCode = "";  
+    }
+  }
+}
